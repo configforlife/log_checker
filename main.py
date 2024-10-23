@@ -1,9 +1,9 @@
 import re
 import json
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import filedialog, Image
 import tkinter.ttk as ttk
-from PIL import Image, ImageTk  # Do obsługi obrazów
+
 
 # Funkcja wczytywania plików logów
 def wczytaj_logi(plik_logu):
@@ -112,12 +112,6 @@ root.configure(bg="white")
 # Dodanie ikony
 photo = tk.PhotoImage(file='uwikona.png')
 root.iconphoto(False, photo)
-
-# Dodanie tła
-bg_image = Image.open('bguw.png')
-bg_image = bg_image.resize((1080, 950))  # Dostosowanie rozmiaru tła
-bg_photo = ImageTk.PhotoImage(bg_image)
-
 
 # Ustawienie tła
 background_image = tk.PhotoImage(file='bguw.png')
