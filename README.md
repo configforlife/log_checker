@@ -24,7 +24,7 @@
 ***
 ## Wymagania
 Python 3.13.0
-<br>Moduły: tkinter, json, re
+<br>Moduły: tkinter, tkinter.ttk, PIL, json, re
 
 ***
 ## Instrukcja
