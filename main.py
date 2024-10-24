@@ -1,7 +1,7 @@
 import re
 import json
 import tkinter as tk
-from tkinter import filedialog, Image
+from tkinter import filedialog
 import tkinter.ttk as ttk
 
 
@@ -70,7 +70,10 @@ class AnalizatorLogow:
                         "bledy": nowe_bledy,
                         "podejrzane": nowe_podejrzane
                     })
+
+
     # Funkcja do zapisu wyników do .json
+    # noinspection PyTypeChecker
     def zapisz_do_json(self, plik_wyjscia):
         with open(plik_wyjscia, 'w') as f:
             json.dump(self.wyniki, f, indent=4)
@@ -79,7 +82,18 @@ class AnalizatorLogow:
         with open(plik_json, 'r') as f:
             self.wyniki = json.load(f)
 
+# Dekorator do logowania działania funkcji
+def logowanie_funkcji(funkcja):
+    def wrapper(*args, **kwargs):
+        print(f"Rozpoczęto działanie funkcji: {funkcja.__name__}")
+        wynik = funkcja(*args, **kwargs)
+        print(f"Zakończono działanie funkcji: {funkcja.__name__}")
+        return wynik
+    return wrapper
+
+
 # Funkcja do wyświetlania wyników w GUI
+@logowanie_funkcji  # Dodanie dekoratora logującego
 def pokaz_wyniki():
     plik_logu = filedialog.askopenfilename(title="Wybierz plik logu", filetypes=(("Pliki tekstowe", "*.txt"), ("Wszystkie pliki", "*.*")))
     if plik_logu:
@@ -87,21 +101,24 @@ def pokaz_wyniki():
         analizator.analizuj()
         analizator.zapisz_do_json('wyniki.json')
 
-        # Wyczyść Treeview
+        # Wyczyść Treeview przed dodaniem nowych wyników
         for row in tree.get_children():
             tree.delete(row)
 
+        # Użycie lambda do filtrowania wyników zawierających błędy lub podejrzane działania
+        # Uwzględnia wyniki z błędami lub podejrzanymi akcjami
+        wszystkie_wyniki = list(filter(lambda wynik: wynik['bledy'] or wynik['podejrzane'], analizator.wyniki))
+
         # Dodaj wyniki do Treeview
-        for wynik in analizator.wyniki:
-            if wynik['bledy'] or wynik['podejrzane']:  # Sprawdź, czy są błędy lub podejrzane działania
-                bledy_str = ', '.join(f"{blad} wystąpienia: {liczba}" for blad, liczba in wynik['bledy'].items()) if wynik['bledy'] else 'Brak błędów'
-                podejrzane_str = ', '.join(f"{akcja} wystąpienia: {liczba}" for akcja, liczba in wynik['podejrzane'].items()) if wynik['podejrzane'] else 'Brak podejrzanych działań'
+        for wynik in wszystkie_wyniki:
+            bledy_str = ', '.join(f"{blad} wystąpienia: {liczba}" for blad, liczba in wynik['bledy'].items()) if wynik['bledy'] else 'Brak błędów'
+            podejrzane_str = ', '.join(f"{akcja} wystąpienia: {liczba}" for akcja, liczba in wynik['podejrzane'].items()) if wynik['podejrzane'] else 'Brak podejrzanych działań'
 
-                # Dodanie opisu do podejrzanych działań
-                opisy_podejrzane = [f"{opis_podejrzanej_akcji(akcja)} (wystąpienia: {liczba})" for akcja, liczba in wynik['podejrzane'].items()]
-                opisy_str = ', '.join(opisy_podejrzane) if opisy_podejrzane else 'Brak opisów'
+            # Dodanie opisu do podejrzanych działań
+            opisy_podejrzane = [f"{opis_podejrzanej_akcji(akcja)} (wystąpienia: {liczba})" for akcja, liczba in wynik['podejrzane'].items()]
+            opisy_str = ', '.join(opisy_podejrzane) if opisy_podejrzane else 'Brak podejrzanych działań'
 
-                tree.insert("", tk.END, values=(wynik['ip'], bledy_str, podejrzane_str, opisy_str))
+            tree.insert("", tk.END, values=(wynik['ip'], bledy_str, podejrzane_str, opisy_str))
 
 # Tworzenie GUI
 root = tk.Tk()
@@ -121,7 +138,7 @@ background_image_i.grid(row=4)
 # Dodanie Treeview do GUI
 tree = ttk.Treeview(root, columns=('IP', 'Błędy', 'Podejrzane', 'Opisy'), show='headings')
 tree.heading('IP', text='IP')
-tree.heading('Błędy', text='Błędy')
+tree.heading('Błędy', text='Błędy odpowiedzi HTTP')
 tree.heading('Podejrzane', text='Podejrzane linijki logu')
 tree.heading('Opisy', text='Opisy podejrzanych działań')
 tree.grid(column=0, row=0, sticky='nsew')
